@@ -156,8 +156,8 @@ contract Registry {
     Listing storage listing = listings[keccak256(_domain)];
 
     require(msg.sender == listing.owner);
-    require(isWhitelisted(_domain));
-
+    require(!isWhitelisted(_domain));
+g
     // Cannot exit during ongoing challenge
     require(!challenges[listing.challengeID].isInitialized() ||
             challenges[listing.challengeID].isResolved());
