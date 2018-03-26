@@ -5,6 +5,7 @@ const Token = artifacts.require('Token.sol');
 const Parameterizer = artifacts.require('Parameterizer.sol');
 const Sale = artifacts.require('historical/Sale.sol');
 const DLL = artifacts.require('DLL.sol');
+const DLLBytes32 = artifacts.require('DLLBytes32.sol');
 const Challenge = artifacts.require('Challenge.sol');
 const AttributeStore = artifacts.require('AttributeStore.sol');
 const PLCRVoting = artifacts.require('PLCRVoting.sol');
@@ -61,6 +62,7 @@ module.exports = (deployer, network, accounts) => {
   let tokenAddress = adchainConfig.TokenAddress;
 
   deployer.deploy(DLL);
+  deployer.deploy(DLLBytes32);
   deployer.deploy(AttributeStore);
   deployer.deploy(Challenge);
 
@@ -72,6 +74,7 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(Challenge, Parameterizer);
 
   deployer.link(DLL, Registry);
+  deployer.link(DLLBytes32, Registry);
   deployer.link(AttributeStore, Registry);
   deployer.link(Challenge, Registry);
 
