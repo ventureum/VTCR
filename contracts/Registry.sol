@@ -4,6 +4,7 @@ import "./historical/StandardToken.sol";
 import "./Parameterizer.sol";
 import "./Challenge.sol";
 import "./PLCRVoting.sol";
+import "./DLLBytes32.sol";
 
 contract Registry {
 
@@ -27,6 +28,7 @@ contract Registry {
   // ------
 
   using Challenge for Challenge.Data;
+  using DLLBytes32 for DLLBytes32.Data;
 
   struct Listing {
     uint applicationExpiry; // Expiration date of apply stage
@@ -39,6 +41,9 @@ contract Registry {
   // ------
   // STATE
   // ------
+
+  // project hash list stored in a DLL
+  DLLBytes32.Data projectHashList;
 
   // Maps challengeIDs to associated challenge data
   mapping(uint => Challenge.Data) public challenges;
@@ -87,8 +92,10 @@ contract Registry {
     require(!appWasMade(_domain));
     require(_amount >= parameterizer.get("minDeposit"));
 
+    bytes32 projectHash = keccak256(_domain);
+
     // Sets owner
-    Listing storage listing = listings[keccak256(_domain)];
+    Listing storage listing = listings[projectHash];
     listing.owner = msg.sender;
 
     // Transfers tokens from user to Registry contract
@@ -97,6 +104,9 @@ contract Registry {
     // Sets apply stage end time
     listing.applicationExpiry = block.timestamp + parameterizer.get("applyStageLen");
     listing.unstakedDeposit = _amount;
+
+    // insert to front
+    projectHashList.insert(bytes32(0x0), projectHash, projectHashList.getNext(bytes32(0x0)));
 
     _Application(_domain, _amount);
   }
@@ -332,6 +342,10 @@ contract Registry {
     return challenges[_challengeID].tokenClaims[_voter];
   }
 
+  function getNextProjectHash(bytes32 curr) public returns (bytes32) {
+      return projectHashList.getNext(curr);
+  }
+
   // ----------------
   // PRIVATE FUNCTIONS
   // ----------------
@@ -403,7 +417,8 @@ contract Registry {
         require(token.transfer(listing.owner, listing.unstakedDeposit));
 
     delete listings[domainHash];
+
+    // remove project hash from DLL
+    projectHashList.remove(domainHash);
   }
-
-
 }
