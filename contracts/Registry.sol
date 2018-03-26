@@ -36,6 +36,7 @@ contract Registry {
         address owner;          // Owner of Listing
         uint unstakedDeposit;   // Number of unlocked tokens with potential risk if challenged
         uint challengeID;       // Identifier of canonical challenge
+        string projectName;     // Project Name
     }
 
     // ------
@@ -104,6 +105,7 @@ contract Registry {
         // Sets apply stage end time
         listing.applicationExpiry = block.timestamp + parameterizer.get("applyStageLen");
         listing.unstakedDeposit = _amount;
+        listing.projectName = _domain;
 
         // insert to front
         projectHashList.insert(bytes32(0x0), projectHash, projectHashList.getNext(bytes32(0x0)));
