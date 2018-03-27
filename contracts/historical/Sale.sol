@@ -48,7 +48,7 @@ contract Sale {
     }
 
     modifier setupComplete {
-        assert(preSaleTokensDisbursed && foundersTokensDisbursed);
+        // assert(preSaleTokensDisbursed && foundersTokensDisbursed);
         _;
     }
 
