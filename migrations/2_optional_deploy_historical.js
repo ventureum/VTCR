@@ -4,6 +4,14 @@ const BN = require('bn.js');
 
 module.exports = (deployer, network, accounts) => {
   if (network != 'mainnet') {
+    const testFolder = './';
+    const fs = require('fs');
+
+    fs.readdir(testFolder, (err, files) => {
+      files.forEach(file => {
+        console.log(file);
+      });
+    })
     const saleConf = JSON.parse(fs.readFileSync('./conf/historical/sale.json'));
     const tokenConf = JSON.parse(fs.readFileSync('./conf/historical/token.json'));
     const preBuyersConf = JSON.parse(fs.readFileSync('./conf/historical/preBuyers.json'));
