@@ -57,6 +57,9 @@ contract Registry {
     PLCRVoting public voting;
     Parameterizer public parameterizer;
 
+    // Store project owner's address
+    mapping(address => bool) public isProjectFounder;
+
     // ------------
     // CONSTRUCTOR
     // ------------
@@ -109,6 +112,9 @@ contract Registry {
 
         // insert to front
         projectHashList.insert(bytes32(0x0), projectHash, projectHashList.getNext(bytes32(0x0)));
+
+        // Add address to project owner list
+        isProjectFounder[msg.sender] = true;
 
         _Application(_project, _amount);
     }
@@ -422,5 +428,8 @@ contract Registry {
 
         // remove project hash from DLL
         projectHashList.remove(projectHash);
+
+        // Remove address from project owner address list
+        isProjectFounder[msg.sender] = false;
     }
 }
