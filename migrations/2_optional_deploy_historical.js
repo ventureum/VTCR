@@ -38,7 +38,7 @@ module.exports = (deployer, network, accounts) => {
       vestingDates.push(foundersConf.vestingDates[date]);
     }
 
-    return deployer.deploy(Sale,
+    deployer.deploy(Sale,
       saleConf.owner,
       saleConf.wallet,
       tokenConf.initialAmount,
@@ -47,19 +47,6 @@ module.exports = (deployer, network, accounts) => {
       tokenConf.tokenSymbol,
       saleConf.price,
       saleConf.startBlock,
-      saleConf.freezeBlock,
-    )
-      .then(() => Sale.deployed())
-      .then(sale => sale.distributePreBuyersRewards(
-        preBuyers,
-        preBuyersTokens,
-      ))
-      .then(() => Sale.deployed())
-      .then(sale => sale.distributeFoundersRewards(
-        founders,
-        foundersTokens,
-        vestingDates,
-      ));
+      saleConf.freezeBlock);
   }
-  console.log('skipping optional dev-only deploy of historical contracts.');
 };
