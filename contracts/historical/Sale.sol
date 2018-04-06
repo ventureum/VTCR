@@ -68,7 +68,7 @@ contract Sale {
     /// @param _tokenName AdToken's human-readable name
     /// @param _tokenDecimals the number of display decimals in AdToken balances
     /// @param _tokenSymbol AdToken's human-readable asset symbol
-    /// @param _price price of the token in Wei (ADT/Wei pair price)
+    /// @param _price number of atto VTH a buyer gets per wei
     /// @param _startBlock the block at which this contract will begin selling its ADT balance
     function Sale(
         address _owner,
@@ -90,7 +90,6 @@ contract Sale {
 
         assert(token.transfer(this, token.totalSupply()));
         assert(token.balanceOf(this) == token.totalSupply());
-        assert(token.balanceOf(this) == 10**18);
     }
 
     /// @dev distributeFoundersRewards(): private utility function called by constructor
@@ -171,24 +170,10 @@ contract Sale {
         setupComplete
         notInEmergency
     {
-        /* Calculate whether any of the msg.value needs to be returned to
-           the sender. The tokenPurchase is the actual number of tokens which
-           will be purchased once any excessAmount included in the msg.value
-           is removed from the purchaseAmount. */
-        uint excessAmount = msg.value % price;
-        uint purchaseAmount = msg.value - excessAmount;
-        uint tokenPurchase = purchaseAmount / price;
+        uint tokenPurchase = msg.value * price;
 
         // Cannot purchase more tokens than this contract has available to sell
         require(tokenPurchase <= token.balanceOf(this));
-
-        // Return any excess msg.value
-        if (excessAmount > 0) {
-            msg.sender.transfer(excessAmount);
-        }
-
-        // Forward received ether minus any excessAmount to the wallet
-        wallet.transfer(purchaseAmount);
 
         // Transfer the sum of tokens tokenPurchase to the msg.sender
         assert(token.transfer(msg.sender, tokenPurchase));
