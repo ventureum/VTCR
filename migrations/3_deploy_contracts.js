@@ -50,11 +50,8 @@ module.exports = (deployer, network, accounts) => {
       if (addresses.length === 1) { return true; }
       return approvePLCRFor(addresses.slice(1));
     }
-
-    await buyTokensFor(accounts);
-    await approveRegistryFor(accounts);
-    await approveParameterizerFor(accounts);
-    await approvePLCRFor(accounts);
+      
+      await buyTokensFor(accounts);
   }
 
   const adchainConfig = JSON.parse(fs.readFileSync('./conf/config.json'));
