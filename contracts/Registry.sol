@@ -44,7 +44,7 @@ contract Registry {
     // ------
 
     // project hash list stored in a DLL
-    DLLBytes32.Data projectHashList;
+    DLLBytes32.Data private projectHashList;
 
     // Maps challengeIDs to associated challenge data
     mapping(uint => Challenge.Data) public challenges;
@@ -75,7 +75,7 @@ contract Registry {
                       address _tokenAddr,
                       address _plcrAddr,
                       address _paramsAddr
-                      ) {
+                      ) public {
         token = StandardToken(_tokenAddr);
         voting = PLCRVoting(_plcrAddr);
         parameterizer = Parameterizer(_paramsAddr);
@@ -116,7 +116,7 @@ contract Registry {
         // Add address to project owner list
         isProjectFounder[msg.sender] = true;
 
-        _Application(_project, _amount);
+        emit _Application(_project, _amount);
     }
 
     /**
@@ -132,7 +132,7 @@ contract Registry {
 
         listing.unstakedDeposit += _amount;
 
-        _Deposit(_project, _amount, listing.unstakedDeposit);
+        emit _Deposit(_project, _amount, listing.unstakedDeposit);
     }
 
     /**
@@ -152,7 +152,7 @@ contract Registry {
 
         listing.unstakedDeposit -= _amount;
 
-        _Withdrawal(_project, _amount, listing.unstakedDeposit);
+        emit _Withdrawal(_project, _amount, listing.unstakedDeposit);
     }
 
     /**
@@ -187,7 +187,7 @@ contract Registry {
     function challenge(string _project) external returns (uint challengeID) {
         bytes32 projectHash = keccak256(_project);
         Listing storage listing = listings[projectHash];
-        uint deposit = parameterizer.get("minDeposit");
+        uint _deposit = parameterizer.get("minDeposit");
 
         // Project must be in apply stage or already on the whitelist
         require(appWasMade(_project) || listing.whitelisted);
@@ -195,14 +195,14 @@ contract Registry {
         require(!challenges[listing.challengeID].isInitialized() ||
                 challenges[listing.challengeID].isResolved());
 
-        if (listing.unstakedDeposit < deposit) {
+        if (listing.unstakedDeposit < _deposit) {
             // Not enough tokens, project auto-delisted
             resetListing(_project);
             return 0;
         }
 
         // Takes tokens from challenger
-        require(token.transferFrom(msg.sender, this, deposit));
+        require(token.transferFrom(msg.sender, this, _deposit));
 
         // Starts poll
         uint pollID = voting.startPoll(
@@ -216,8 +216,8 @@ contract Registry {
                     voting: voting,
                     token: token,
                     challengeID: pollID,
-                    rewardPool: ((100 - parameterizer.get("dispensationPct")) * deposit) / 100,
-                    stake: deposit,
+                    rewardPool: ((100 - parameterizer.get("dispensationPct")) * _deposit) / 100,
+                    stake: _deposit,
                     resolved: false,
                     winningTokens: 0
                     });
@@ -226,9 +226,9 @@ contract Registry {
         listings[projectHash].challengeID = pollID;
 
         // Locks tokens for listing during challenge
-        listings[projectHash].unstakedDeposit -= deposit;
+        listings[projectHash].unstakedDeposit -= _deposit;
 
-        _Challenge(_project, deposit, pollID);
+        emit _Challenge(_project, _deposit, pollID);
         return pollID;
     }
 
@@ -241,7 +241,7 @@ contract Registry {
     function claimReward(uint _challengeID, uint _salt) public {
         uint reward = challenges[_challengeID].claimReward(msg.sender, _salt);
 
-        _RewardClaimed(msg.sender, _challengeID, reward);
+        emit _RewardClaimed(msg.sender, _challengeID, reward);
     }
 
     /**
@@ -252,11 +252,9 @@ contract Registry {
     function updateStatus(string _project) public {
         if (canBeWhitelisted(_project)) {
             whitelistApplication(_project);
-            _NewProjectWhitelisted(_project);
+            emit _NewProjectWhitelisted(_project);
         } else if (challengeCanBeResolved(_project)) {
             resolveChallenge(_project);
-        } else {
-            revert();
         }
     }
 
@@ -268,7 +266,7 @@ contract Registry {
        @dev                Determines whether the project of an application can be whitelisted.
        @param _project      The project whose status should be examined
     */
-    function canBeWhitelisted(string _project) constant public returns (bool) {
+    function canBeWhitelisted(string _project) public view returns (bool) {
         bytes32 projectHash = keccak256(_project);
         uint challengeID = listings[projectHash].challengeID;
 
@@ -287,19 +285,19 @@ contract Registry {
     }
 
     /// @dev returns true if project is whitelisted
-    function isWhitelisted(string _project) constant public returns (bool whitelisted) {
+    function isWhitelisted(string _project) public view returns (bool whitelisted) {
         return listings[keccak256(_project)].whitelisted;
     }
 
     // @dev returns true if apply was called for this project
-    function appWasMade(string _project) constant public returns (bool exists) {
+    function appWasMade(string _project) public view returns (bool exists) {
         return listings[keccak256(_project)].applicationExpiry > 0;
     }
 
     // @dev returns true if the application/listing has an unresolved challenge
-    function challengeExists(string _project) constant public returns (bool) {
-        Challenge.Data storage challenge = challenges[listings[keccak256(_project)].challengeID];
-        return challenge.isInitialized() && !challenge.isResolved();
+    function challengeExists(string _project) public view returns (bool) {
+        Challenge.Data storage _challenge = challenges[listings[keccak256(_project)].challengeID];
+        return _challenge.isInitialized() && !_challenge.isResolved();
     }
 
     /**
@@ -307,21 +305,21 @@ contract Registry {
        @dev                Throws if no challenge exists.
        @param _project      A project with an unresolved challenge
     */
-    function challengeCanBeResolved(string _project) constant public returns (bool) {
-        Challenge.Data storage challenge = challenges[listings[keccak256(_project)].challengeID];
-        return challenge.isInitialized() && challenge.canBeResolved();
+    function challengeCanBeResolved(string _project) public view returns (bool) {
+        Challenge.Data storage _challenge = challenges[listings[keccak256(_project)].challengeID];
+        return _challenge.isInitialized() && _challenge.canBeResolved();
     }
 
     /**
        @notice             Determines the number of tokens awarded to the winning party in a challenge.
        @param _challengeID The challengeID to determine a reward for
     */
-    function challengeWinnerReward(uint _challengeID) public constant returns (uint) {
+    function challengeWinnerReward(uint _challengeID) public view returns (uint) {
         return challenges[_challengeID].challengeWinnerReward(); 
     }
 
     /// @dev returns true if the provided termDate has passed
-    function isExpired(uint _termDate) constant public returns (bool expired) {
+    function isExpired(uint _termDate) public view returns (bool expired) {
         return _termDate < block.timestamp;
     }
 
@@ -350,7 +348,7 @@ contract Registry {
         return challenges[_challengeID].tokenClaims[_voter];
     }
 
-    function getNextProjectHash(bytes32 curr) public returns (bytes32) {
+    function getNextProjectHash(bytes32 curr) public view returns (bytes32) {
         return projectHashList.getNext(curr);
     }
 
@@ -366,38 +364,38 @@ contract Registry {
     function resolveChallenge(string _project) private {
         bytes32 projectHash = keccak256(_project);
         Listing storage listing = listings[projectHash];
-        Challenge.Data storage challenge = challenges[listing.challengeID];
+        Challenge.Data storage _challenge = challenges[listing.challengeID];
 
         // Calculates the winner's reward,
         // which is: (winner's full stake) + (dispensationPct * loser's stake)
-        uint winnerReward = challenge.challengeWinnerReward();
+        uint winnerReward = _challenge.challengeWinnerReward();
 
         // Records whether the project is a listing or an application
         bool wasWhitelisted = isWhitelisted(_project);
 
         // Case: challenge failed
-        if (voting.isPassed(challenge.challengeID)) {
+        if (voting.isPassed(_challenge.challengeID)) {
             whitelistApplication(_project);
             // Unlock stake so that it can be retrieved by the applicant
             listing.unstakedDeposit += winnerReward;
 
-            _ChallengeFailed(challenge.challengeID);
-            if (!wasWhitelisted) { _NewProjectWhitelisted(_project); }
+            emit _ChallengeFailed(_challenge.challengeID);
+            if (!wasWhitelisted) { emit _NewProjectWhitelisted(_project); }
         }
         // Case: challenge succeeded
         else {
             resetListing(_project);
             // Transfer the reward to the challenger
-            require(token.transfer(challenge.challenger, winnerReward));
+            require(token.transfer(_challenge.challenger, winnerReward));
 
-            _ChallengeSucceeded(challenge.challengeID);
-            if (wasWhitelisted) { _ListingRemoved(_project); }
-            else { _ApplicationRemoved(_project); }
+            emit _ChallengeSucceeded(_challenge.challengeID);
+            if (wasWhitelisted) { emit _ListingRemoved(_project); }
+            else {emit _ApplicationRemoved(_project); }
         }
 
-        challenge.winningTokens =
-            challenge.voting.getTotalNumberOfTokensForWinningOption(challenge.challengeID);
-        challenge.resolved = true;
+        _challenge.winningTokens =
+            _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
+        _challenge.resolved = true;
     }
 
     /**

@@ -83,7 +83,7 @@ contract Parameterizer {
     uint _pDispensationPct,
     uint _voteQuorum,
     uint _pVoteQuorum
-    ) {
+    ) public {
       token = StandardToken(_tokenAddr);
       voting = PLCRVoting(_plcrAddr);
 
@@ -130,7 +130,7 @@ contract Parameterizer {
       value: _value
     });
 
-    _ReparameterizationProposal(msg.sender, _name, _value, propID);
+    emit _ReparameterizationProposal(msg.sender, _name, _value, propID);
     return propID;
   }
 
@@ -166,7 +166,7 @@ contract Parameterizer {
 
     proposals[_propID].challengeID = pollID;       // update listing to store most recent challenge
 
-    _NewChallenge(msg.sender, _propID, pollID);
+    emit _NewChallenge(msg.sender, _propID, pollID);
     return pollID;
   }
 
@@ -219,7 +219,7 @@ contract Parameterizer {
   @notice Determines whether a proposal passed its application stage without a challenge
   @param _propID The proposal ID for which to determine whether its application stage passed without a challenge
   */
-  function canBeSet(bytes32 _propID) constant public returns (bool) {
+  function canBeSet(bytes32 _propID) public view returns (bool) {
     ParamProposal memory prop = proposals[_propID];
 
     return (now > prop.appExpiry && now < prop.processBy && prop.challengeID == 0);
@@ -229,7 +229,7 @@ contract Parameterizer {
   @notice Determines whether a proposal exists for the provided proposal ID
   @param _propID The proposal ID whose existance is to be determined
   */
-  function propExists(bytes32 _propID) constant public returns (bool) {
+  function propExists(bytes32 _propID) public view returns (bool) {
     return proposals[_propID].processBy > 0;
   }
 
@@ -237,7 +237,7 @@ contract Parameterizer {
   @notice Determines whether the provided proposal ID has a challenge which can be resolved
   @param _propID The proposal ID whose challenge to inspect
   */
-  function challengeCanBeResolved(bytes32 _propID) constant public returns (bool) {
+  function challengeCanBeResolved(bytes32 _propID) public view returns (bool) {
     Challenge.Data storage challenge = challenges[proposals[_propID].challengeID];
     return challenge.isInitialized() && challenge.canBeResolved();
   }
@@ -254,7 +254,7 @@ contract Parameterizer {
   @notice gets the parameter keyed by the provided name value from the params mapping
   @param _name the key whose value is to be determined
   */
-  function get(string _name) public constant returns (uint value) {
+  function get(string _name) public view returns (uint value) {
     return params[keccak256(_name)];
   }
 

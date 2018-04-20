@@ -80,7 +80,7 @@ contract Sale {
         uint _price,
         uint _startBlock,
         uint _freezeBlock
-    ) {
+    ) public {
         owner = _owner;
         wallet = _wallet;
         token = new HumanStandardToken(_tokenSupply, _tokenName, _tokenDecimals, _tokenSymbol);
@@ -106,7 +106,7 @@ contract Sale {
 
         for(uint i = 0; i < _preBuyers.length; i++) {
             require(token.transfer(_preBuyers[i], _preBuyersTokens[i]));
-            TransferredPreBuyersReward(_preBuyers[i], _preBuyersTokens[i]);
+            emit TransferredPreBuyersReward(_preBuyers[i], _preBuyersTokens[i]);
         }
 
         preSaleTokensDisbursed = true;
@@ -155,7 +155,7 @@ contract Sale {
             filter.setup(vault);             
             // Transfer to the vault the tokens it is to disburse
             assert(token.transfer(vault, tokensPerTranch));
-            TransferredFoundersTokens(vault, tokensPerTranch);
+            emit TransferredFoundersTokens(vault, tokensPerTranch);
         }
 
         assert(token.balanceOf(this) == 5 * 10**17);
@@ -165,6 +165,7 @@ contract Sale {
     /// @dev purchaseToken(): function that exchanges ETH for ADT (main sale function)
     /// @notice You're about to purchase the equivalent of `msg.value` Wei in ADT tokens
     function purchaseTokens()
+        public
         saleStarted
         payable
         setupComplete
@@ -178,21 +179,21 @@ contract Sale {
         // Transfer the sum of tokens tokenPurchase to the msg.sender
         assert(token.transfer(msg.sender, tokenPurchase));
 
-        PurchasedTokens(msg.sender, tokenPurchase);
+        emit PurchasedTokens(msg.sender, tokenPurchase);
     }
 
     /*
      * Owner-only functions
      */
 
-    function changeOwner(address _newOwner)
+    function changeOwner(address _newOwner) public
         onlyOwner
     {
         require(_newOwner != 0);
         owner = _newOwner;
     }
 
-    function changePrice(uint _newPrice)
+    function changePrice(uint _newPrice) public
         onlyOwner
         notFrozen
     {
@@ -200,7 +201,7 @@ contract Sale {
         price = _newPrice;
     }
 
-    function changeWallet(address _wallet)
+    function changeWallet(address _wallet) public
         onlyOwner
         notFrozen
     {
@@ -208,7 +209,7 @@ contract Sale {
         wallet = _wallet;
     }
 
-    function changeStartBlock(uint _newBlock)
+    function changeStartBlock(uint _newBlock) public
         onlyOwner
         notFrozen
     {
@@ -218,7 +219,7 @@ contract Sale {
         startBlock = _newBlock;
     }
 
-    function emergencyToggle()
+    function emergencyToggle() public
         onlyOwner
     {
         emergencyFlag = !emergencyFlag;

@@ -72,7 +72,7 @@ contract Regulators {
         require(token.transferFrom(msg.sender, this, amount));
         members[msg.sender].staked = amount;
 
-        RequestApproval(msg.sender, amount);
+        emit RequestApproval(msg.sender, amount);
     }
 
     function withdraw(uint amount) external {
@@ -81,14 +81,14 @@ contract Regulators {
         members[msg.sender].staked -= amount;
         require(token.transfer(msg.sender, amount));
 
-        Withdraw(msg.sender, amount);
+        emit Withdraw(msg.sender, amount);
     }
 
     function approve(address addr) onlyOwners external {
         require(members[addr].staked >= minStakingAmount);
         members[addr].isRegulator = true;
 
-        Approve(addr);
+        emit Approve(addr);
     }
 
     function disapprove(address addr) onlyOwners external {
@@ -98,13 +98,13 @@ contract Regulators {
         // Refund staked VTH
         require(token.transfer(addr, members[msg.sender].staked));
 
-        Disapprove(addr);
+        emit Disapprove(addr);
     }
 
     function setOwnership(address addr, bool val) onlyCreator external {
         owners[addr] = val;
 
-        SetOwnership(addr, val);
+        emit SetOwnership(addr, val);
     }
 
     // DEBUG helpers
@@ -113,12 +113,12 @@ contract Regulators {
     function DEBUG_approve(address addr) external {
         require(DEBUG);
         members[addr].isRegulator = true;
-        Approve(addr);
+        emit Approve(addr);
     }
 
     function DEBUG_disapprove(address addr) external {
         require(DEBUG);
         members[addr].isRegulator = false;
-        Approve(addr);
+        emit Approve(addr);
     }
 }

@@ -22,14 +22,14 @@ contract Filter {
     function Filter(
         address[] _beneficiaries,
         uint[] _beneficiaryTokens
-    ) {
+    ) public {
         owner = msg.sender;
         for(uint i = 0; i < _beneficiaries.length; i++) {
             beneficiaries[_beneficiaries[i]] = Beneficiary({
                 claimAmount: _beneficiaryTokens[i],
                 claimed: false
             });
-            SetupAllowance(_beneficiaries[i],
+            emit SetupAllowance(_beneficiaries[i],
                            beneficiaries[_beneficiaries[i]].claimAmount);
         }
     }

@@ -10,15 +10,15 @@ library DLL {
 		mapping(uint => Node) dll;
 	}
 
-	function getNext(Data storage self, uint curr) returns (uint) {
+	function getNext(Data storage self, uint curr) public view returns (uint) {
 		return self.dll[curr].next;
 	}
 
-	function getPrev(Data storage self, uint curr) returns (uint) {
+	function getPrev(Data storage self, uint curr) public view returns (uint) {
 		return self.dll[curr].prev;
 	}
 
-	function insert(Data storage self, uint prev, uint curr, uint next) {
+	function insert(Data storage self, uint prev, uint curr, uint next) public {
 		self.dll[curr].prev = prev;
 		self.dll[curr].next = next;
 
@@ -26,7 +26,7 @@ library DLL {
 		self.dll[next].prev = curr;
 	}
 
-	function remove(Data storage self, uint curr) {
+	function remove(Data storage self, uint curr) public {
 		uint next = getNext(self, curr);
 		uint prev = getPrev(self, curr);
 
