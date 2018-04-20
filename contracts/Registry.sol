@@ -416,13 +416,8 @@ contract Registry {
     */
     function resetListing(string _project) private {
         bytes32 projectHash = keccak256(_project);
-        Listing storage listing = listings[projectHash];
 
-        // Transfers any remaining balance back to the owner
-        if (listing.unstakedDeposit > 0)
-            require(token.transfer(listing.owner, listing.unstakedDeposit));
-
-        delete listings[projectHash];
+        delete listings[projectHash].applicationExpiry;
 
         // remove project hash from DLL
         projectHashList.remove(projectHash);
