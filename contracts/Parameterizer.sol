@@ -1,4 +1,4 @@
-pragma solidity^0.4.21;
+pragma solidity^0.4.23;
 
 import "./PLCRVoting.sol";
 import "./historical/StandardToken.sol";
@@ -68,7 +68,7 @@ contract Parameterizer {
   @param _voteQuorum       type of majority out of 100 necessary for vote success
   @param _pVoteQuorum      type of majority out of 100 necessary for vote success in parameterizer
   */
-  function Parameterizer( 
+  constructor( 
     address _tokenAddr,
     address _plcrAddr,
     uint _minDeposit,

@@ -1,4 +1,4 @@
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 import "./Disbursement.sol";
 
 contract Filter {
@@ -19,7 +19,7 @@ contract Filter {
         _;
     }
 
-    function Filter(
+    constructor(
         address[] _beneficiaries,
         uint[] _beneficiaryTokens
     ) public {

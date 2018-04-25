@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 import "./historical/StandardToken.sol";
 import "./Parameterizer.sol";
@@ -71,7 +71,7 @@ contract Registry {
        @param _plcrAddr        Address of a PLCR voting contract for the provided token
        @param _paramsAddr      Address of a Parameterizer contract for the provided PLCR voting contract
     */
-    function Registry(
+    constructor(
                       address _tokenAddr,
                       address _plcrAddr,
                       address _paramsAddr

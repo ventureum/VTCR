@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 import "./historical/Token.sol";
 
@@ -53,7 +53,7 @@ contract Regulators {
         _;
     }
 
-    function Regulators(address tokenAddr, bool _DEBUG) public {
+    constructor(address tokenAddr, bool _DEBUG) public {
         DEBUG = _DEBUG;
         token = Token(tokenAddr);
         owners[msg.sender] = true;

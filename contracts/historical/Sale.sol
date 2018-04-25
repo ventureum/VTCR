@@ -1,4 +1,4 @@
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 import "./HumanStandardToken.sol";
 import "./Disbursement.sol";
 import "./Filter.sol";
@@ -70,7 +70,7 @@ contract Sale {
     /// @param _tokenSymbol AdToken's human-readable asset symbol
     /// @param _price number of atto VTH a buyer gets per wei
     /// @param _startBlock the block at which this contract will begin selling its ADT balance
-    function Sale(
+    constructor(
         address _owner,
         address _wallet,
         uint256 _tokenSupply,

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 import "./historical/HumanStandardToken.sol";
 import "./DLL.sol";
 import "./AttributeStore.sol";
@@ -48,7 +48,7 @@ contract PLCRVoting {
     @dev Initializes voteQuorum, commitDuration, revealDuration, and pollNonce in addition to token contract and trusted mapping
     @param _tokenAddr The address whe(setq debug-on-error t)re the ERC20 token contract is deployed
     */
-    function PLCRVoting(address _tokenAddr) public {
+    constructor(address _tokenAddr) public {
         token = HumanStandardToken(_tokenAddr);
         pollNonce = INITIAL_POLL_NONCE;
     }

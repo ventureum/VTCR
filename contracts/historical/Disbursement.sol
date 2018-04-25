@@ -1,4 +1,4 @@
-pragma solidity 0.4.21;
+pragma solidity 0.4.23;
 import "./Token.sol";
 // NOTE: ORIGINALLY THIS WAS "TOKENS/ABSTRACTTOKEN.SOL"... CHECK THAT
 
@@ -48,7 +48,7 @@ contract Disbursement {
     /// @param _receiver Receiver of vested tokens
     /// @param _disbursementPeriod Vesting period in seconds
     /// @param _startDate Start date of disbursement period (cliff)
-    function Disbursement(address _receiver, uint _disbursementPeriod, uint _startDate)
+    constructor(address _receiver, uint _disbursementPeriod, uint _startDate)
         public
     {
         if (_receiver == 0 || _disbursementPeriod == 0)
