@@ -187,6 +187,9 @@ contract Registry {
     function challenge(string _project) external returns (uint challengeID) {
         bytes32 projectHash = keccak256(_project);
         Listing storage listing = listings[projectHash];
+
+        require(now < listing.applicationExpiry, "Cannot challenge after application stage");
+
         uint _deposit = parameterizer.get("minDeposit");
 
         // Project must be in apply stage or already on the whitelist
