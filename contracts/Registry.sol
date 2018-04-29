@@ -14,8 +14,6 @@ contract Registry {
 
     event _Application(string project, uint deposit);
     event _Challenge(string project, uint deposit, uint pollID);
-    event _Deposit(string project, uint added, uint newTotal);
-    event _Withdrawal(string project, uint withdrew, uint newTotal);
     event _NewProjectWhitelisted(string project);
     event _ApplicationRemoved(string project);
     event _ListingRemoved(string project);
