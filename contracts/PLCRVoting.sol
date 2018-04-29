@@ -217,7 +217,7 @@ contract PLCRVoting {
         require(pollEnded(_pollID));
 
         Poll memory poll = pollMap[_pollID];
-        return (100 * poll.votesFor) > (poll.voteQuorum * (poll.votesFor + poll.votesAgainst));
+        return (100 * poll.votesFor) >= (poll.voteQuorum * (poll.votesFor + poll.votesAgainst));
     }
 
     // ----------------
