@@ -21,7 +21,7 @@ contract Registry {
     event _ListingRemoved(string project);
     event _ChallengeFailed(uint challengeID);
     event _ChallengeSucceeded(uint challengeID);
-    event _RewardClaimed(address voter, uint challengeID, uint reward);
+    event _RewardClaimed(address indexed voter, uint challengeID, uint reward);
 
     // ------
     // DATA STRUCTURES
