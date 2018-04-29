@@ -12,7 +12,7 @@ contract Registry {
     // EVENTS
     // ------
 
-    event _Application(string project, uint deposit);
+    event _Application(address indexed applicant, string project, uint deposit);
     event _Challenge(address indexed challenger, string project, uint deposit, uint pollID);
     event _NewProjectWhitelisted(string project);
     event _ApplicationRemoved(string project);
@@ -114,7 +114,7 @@ contract Registry {
         // Add address to project owner list
         isProjectFounder[msg.sender] = true;
 
-        emit _Application(_project, _amount);
+        emit _Application(msg.sender, _project, _amount);
     }
 
     /**
