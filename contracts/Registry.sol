@@ -120,42 +120,6 @@ contract Registry {
     }
 
     /**
-       @notice             Allows the owner of a project to increase their unstaked deposit.
-       @param _project      The project of a user's application/listing
-       @param _amount      The number of ERC20 tokens to increase a user's unstaked deposit
-    */
-    function deposit(string _project, uint _amount) external {
-        Listing storage listing = listings[keccak256(_project)];
-
-        require(listing.owner == msg.sender);
-        require(token.transferFrom(msg.sender, this, _amount));
-
-        listing.unstakedDeposit += _amount;
-
-        emit _Deposit(_project, _amount, listing.unstakedDeposit);
-    }
-
-    /**
-       @notice             Allows the owner of a project to decrease their unstaked deposit.
-       @notice             The listing keeps its previous status.
-       @param _project      The project of a user's application/listing
-       @param _amount      The number of ERC20 tokens to decrease a user's unstaked deposit
-    */
-    function withdraw(string _project, uint _amount) external {
-        Listing storage listing = listings[keccak256(_project)];
-
-        require(listing.owner == msg.sender);
-        require(_amount <= listing.unstakedDeposit);
-        require(listing.unstakedDeposit - _amount >= parameterizer.get("minDeposit"));
-
-        require(token.transfer(msg.sender, _amount));
-
-        listing.unstakedDeposit -= _amount;
-
-        emit _Withdrawal(_project, _amount, listing.unstakedDeposit);
-    }
-
-    /**
        @notice             Allows the owner of a listing to remove the listing from the whitelist
        @notice             Returns all tokens to the owner of the listing
        @param _project      The project of a user's listing
