@@ -13,7 +13,7 @@ contract Registry {
     // ------
 
     event _Application(string project, uint deposit);
-    event _Challenge(string project, uint deposit, uint pollID);
+    event _Challenge(address indexed challenger, string project, uint deposit, uint pollID);
     event _NewProjectWhitelisted(string project);
     event _ApplicationRemoved(string project);
     event _ListingRemoved(string project);
@@ -193,7 +193,7 @@ contract Registry {
         // Locks tokens for listing during challenge
         listings[projectHash].unstakedDeposit -= _deposit;
 
-        emit _Challenge(_project, _deposit, pollID);
+        emit _Challenge(msg.sender, _project, _deposit, pollID);
         return pollID;
     }
 
