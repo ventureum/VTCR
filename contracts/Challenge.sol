@@ -85,10 +85,10 @@ library Challenge {
     _self.winningTokens -= voterTokens;
     _self.rewardPool -= reward;
 
-    require(_self.token.transfer(_voter, reward));
-
     // Ensures a voter cannot claim tokens again
     _self.tokenClaims[_voter] = true;
+
+    require(_self.token.transfer(_voter, reward));
     
     return reward;
   }

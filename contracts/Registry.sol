@@ -100,9 +100,6 @@ contract Registry {
         Listing storage listing = listings[projectHash];
         listing.owner = msg.sender;
 
-        // Transfers tokens from user to Registry contract
-        require(token.transferFrom(listing.owner, this, _amount));
-
         // Sets apply stage end time
         listing.applicationExpiry = block.timestamp + parameterizer.get("applyStageLen");
         listing.unstakedDeposit = _amount;
@@ -113,6 +110,9 @@ contract Registry {
 
         // Add address to project owner list
         isProjectFounder[msg.sender] = true;
+
+        // Transfers tokens from user to Registry contract
+        require(token.transferFrom(listing.owner, this, _amount));
 
         emit _Application(msg.sender, _project, _amount);
     }
@@ -166,9 +166,6 @@ contract Registry {
             return 0;
         }
 
-        // Takes tokens from challenger
-        require(token.transferFrom(msg.sender, this, _deposit));
-
         // Starts poll
         uint pollID = voting.startPoll(
                                        parameterizer.get("voteQuorum"),
@@ -192,6 +189,9 @@ contract Registry {
 
         // Locks tokens for listing during challenge
         listings[projectHash].unstakedDeposit -= _deposit;
+
+        // Takes tokens from challenger
+        require(token.transferFrom(msg.sender, this, _deposit));
 
         emit _Challenge(msg.sender, _project, _deposit, pollID);
         return pollID;
@@ -338,6 +338,10 @@ contract Registry {
         // Records whether the project is a listing or an application
         bool wasWhitelisted = isWhitelisted(_project);
 
+        _challenge.winningTokens =
+          _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
+        _challenge.resolved = true;
+
         // Case: challenge failed
         if (voting.isPassed(_challenge.challengeID)) {
             whitelistApplication(_project);
@@ -357,10 +361,6 @@ contract Registry {
             if (wasWhitelisted) { emit _ListingRemoved(_project); }
             else {emit _ApplicationRemoved(_project); }
         }
-
-        _challenge.winningTokens =
-            _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
-        _challenge.resolved = true;
     }
 
     /**
