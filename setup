@@ -1,2 +1,0 @@
-truffle migrate --reset
-cp -r ./build/contracts ../VUI/public
