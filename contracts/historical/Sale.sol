@@ -2,6 +2,7 @@ pragma solidity 0.4.23;
 import "./HumanStandardToken.sol";
 import "./Disbursement.sol";
 import "./Filter.sol";
+import "../SafeMath.sol";
 
 contract Sale {
 
@@ -27,6 +28,8 @@ contract Sale {
     bool public preSaleTokensDisbursed = false;
     bool public foundersTokensDisbursed = false;
     address[] public filters;
+
+    using SafeMath for uint;
 
     /*
      * Modifiers
@@ -137,8 +140,10 @@ contract Sale {
 
         // Compute foundersTokensPerTranch and tokensPerTranch
         for(uint i = 0; i < _foundersTokens.length; i++) {
-            foundersTokensPerTranch[i] = _foundersTokens[i]/tranches;
-            tokensPerTranch = tokensPerTranch + foundersTokensPerTranch[i];
+            // foundersTokensPerTranch[i] = _foundersTokens[i]/tranches;
+            foundersTokensPerTranch[i]= foundersTokensPerTranch[i].div(tranches);
+            // tokensPerTranch = tokensPerTranch + foundersTokensPerTranch[i];
+            tokensPerTranch = tokensPerTranch.add(foundersTokensPerTranch[i]);
         }
 
         /* Deploy disbursement and filter contract pairs, initialize both and store
@@ -171,8 +176,8 @@ contract Sale {
         setupComplete
         notInEmergency
     {
-        uint tokenPurchase = msg.value * price;
-
+        // uint tokenPurchase = msg.value * price;
+        uint tokenPurchase = msg.value.mul(price);
         // Cannot purchase more tokens than this contract has available to sell
         require(tokenPurchase <= token.balanceOf(this));
 
@@ -215,7 +220,8 @@ contract Sale {
     {
         require(_newBlock != 0);
 
-        freezeBlock = _newBlock - (startBlock - freezeBlock);
+        // freezeBlock = _newBlock - (startBlock - freezeBlock);
+        freezeBlock = _newBlock.sub(startBlock.sub(freezeBlock));
         startBlock = _newBlock;
     }
 

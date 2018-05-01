@@ -2,8 +2,12 @@ pragma solidity^0.4.23;
 
 import "./PLCRVoting.sol";
 import "./historical/StandardToken.sol";
+import "./SafeMath.sol";
 
 library Challenge {
+
+
+  using SafeMath for uint;
 
   // ------
   // DATA STRUCTURES
@@ -45,10 +49,12 @@ library Challenge {
   function challengeWinnerReward(Data storage _self) public constant returns (uint) {
     // Edge case, nobody voted, give all tokens to the challenger.
     if (_self.voting.getTotalNumberOfTokensForWinningOption(_self.challengeID) == 0) {
-      return 2 * _self.stake;
+      // return 2 * _self.stake;
+      return _self.stake.mul(2);
     }
 
-    return (2 * _self.stake) - _self.rewardPool;
+    // return (2 * _self.stake) - _self.rewardPool;
+    return _self.stake.mul(2).sub(_self.rewardPool);
   }
 
   /**
@@ -60,7 +66,8 @@ library Challenge {
   function voterReward(Data storage _self, address _voter, uint _salt)
   public constant returns (uint) {
     uint voterTokens = _self.voting.getNumPassingTokens(_voter, _self.challengeID, _salt);
-    return (voterTokens * _self.rewardPool) / _self.winningTokens;
+    // return (voterTokens * _self.rewardPool) / _self.winningTokens;
+    return voterTokens.mul(_self.rewardPool).div(_self.winningTokens);
   }
 
   // --------
@@ -82,8 +89,11 @@ library Challenge {
 
     // Subtracts the voter's information to preserve the participation ratios
     // of other voters compared to the remaining pool of rewards
-    _self.winningTokens -= voterTokens;
-    _self.rewardPool -= reward;
+    // _self.winningTokens -= voterTokens;
+    // _self.rewardPool -= reward;
+    _self.winningTokens=_self.winningTokens.sub(voterTokens);
+    _self.rewardPool=_self.rewardPool.sub(reward);
+
 
     // Ensures a voter cannot claim tokens again
     _self.tokenClaims[_voter] = true;

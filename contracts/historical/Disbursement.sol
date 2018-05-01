@@ -1,5 +1,6 @@
 pragma solidity 0.4.23;
 import "./Token.sol";
+import "../SafeMath.sol";
 // NOTE: ORIGINALLY THIS WAS "TOKENS/ABSTRACTTOKEN.SOL"... CHECK THAT
 
 
@@ -17,6 +18,7 @@ contract Disbursement {
     uint public withdrawnTokens;
     Token public token;
 
+    using SafeMath for uint;
     /*
      *  Modifiers
      */
@@ -85,7 +87,8 @@ contract Disbursement {
         uint maxTokens = calcMaxWithdraw();
         if (_value > maxTokens)
             revert();
-        withdrawnTokens += _value;
+        // withdrawnTokens += _value;
+        withdrawnTokens =withdrawnTokens.add(_value);
         token.transfer(_to, _value);
     }
 
@@ -96,9 +99,12 @@ contract Disbursement {
         constant
         returns (uint)
     {
-        uint maxTokens = (token.balanceOf(this) + withdrawnTokens) * (now - startDate) / disbursementPeriod;
+        // uint maxTokens = (token.balanceOf(this) + withdrawnTokens) * (now - startDate) / disbursementPeriod;
+        uint maxTokens = (token.balanceOf(this).add(withdrawnTokens).mul(now.sub(startDate))).div(disbursementPeriod);
+
         if (withdrawnTokens >= maxTokens || startDate > now)
             return 0;
-        return maxTokens - withdrawnTokens;
+        // return SafeMath.sub(maxTokens, withdrawnTokens);
+        return maxTokens.sub(withdrawnTokens);
     }
 }
