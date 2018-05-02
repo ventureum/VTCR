@@ -8,9 +8,15 @@ Implements ERC 20 Token standard: https://github.com/ethereum/EIPs/issues/20
 .*/
 pragma solidity ^0.4.23;
 
+
+
 import "./Token.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 
 contract StandardToken is Token {
+
+    using SafeMath for uint;
 
     function transfer(address _to, uint256 _value) public returns (bool success) {
         //Default assumes totalSupply can't be over max (2^256 - 1).
@@ -18,8 +24,10 @@ contract StandardToken is Token {
         //Replace the if with this one instead.
         //if (balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
         if (balances[msg.sender] >= _value && _value > 0) {
-            balances[msg.sender] -= _value;
-            balances[_to] += _value;
+            // balances[msg.sender] -= _value;
+            balances[msg.sender]= balances[msg.sender].sub(_value);
+            // balances[_to] += _value;
+            balances[_to] = balances[_to].add(_value);
             emit Transfer(msg.sender, _to, _value);
             return true;
         } else { return false; }
@@ -29,9 +37,12 @@ contract StandardToken is Token {
         //same as above. Replace this line with the following if you want to protect against wrapping uints.
         //if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]) {
         if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && _value > 0) {
-            balances[_to] += _value;
-            balances[_from] -= _value;
-            allowed[_from][msg.sender] -= _value;
+            // balances[_to] += _value;
+            balances[_to] =balances[_to].add(_value);
+            // balances[_from] -= _value;
+            balances[_from]= balances[_from].sub(_value);
+            // allowed[_from][msg.sender] -= _value;
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
             emit Transfer(_from, _to, _value);
             return true;
         } else { return false; }

@@ -3,6 +3,7 @@ pragma solidity^0.4.23;
 import "./PLCRVoting.sol";
 import "./historical/StandardToken.sol";
 import "./Challenge.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Parameterizer {
 
@@ -46,6 +47,8 @@ contract Parameterizer {
   StandardToken public token;
   PLCRVoting public voting;
   uint public PROCESSBY = 604800; // 7 days
+
+  using SafeMath for uint;
 
   // ------------
   // CONSTRUCTOR
@@ -118,15 +121,17 @@ contract Parameterizer {
     require(get(_name) != _value); // Forbid NOOP reparameterizations
     require(token.transferFrom(msg.sender, this, deposit)); // escrow tokens (deposit amt)
 
-    // attach name and value to pollID		
+    // attach name and value to pollID
+    
+    // appExpiry: now + get("pApplyStageLen"),
+    //processBy: now + get("pApplyStageLen") + get("pCommitStageLen") + get("pRevealStageLen") + PROCESSBY,
     proposals[propID] = ParamProposal({
-      appExpiry: now + get("pApplyStageLen"),
+      appExpiry: now.add(get("pApplyStageLen")),
       challengeID: 0,
       deposit: deposit,
       name: _name,
       owner: msg.sender,
-      processBy: now + get("pApplyStageLen") + get("pCommitStageLen") +
-        get("pRevealStageLen") + PROCESSBY,
+      processBy: now.add(get("pApplyStageLen")).add(get("pCommitStageLen")).add(get("pRevealStageLen")).add(PROCESSBY),
       value: _value
     });
 
@@ -153,12 +158,15 @@ contract Parameterizer {
       get("pRevealStageLen")
     );
 
+    // rewardPool: ((100 - get("pDispensationPct")) * deposit) / 100,
+    // rewardPool: ((100 - get("pDispensationPct")) * deposit) / 100,
+    uint oneHundred=100;
     challenges[pollID] = Challenge.Data({
         challenger: msg.sender,
         voting: voting,
         token: token,
         challengeID: pollID,
-        rewardPool: ((100 - get("pDispensationPct")) * deposit) / 100,
+        rewardPool: oneHundred.sub(get("pDispensationPct")).mul(deposit).div(oneHundred),
         stake: deposit,
         resolved: false,
         winningTokens: 0
@@ -269,7 +277,6 @@ contract Parameterizer {
   function resolveChallenge(bytes32 _propID) private {
     ParamProposal memory prop = proposals[_propID];
     Challenge.Data storage challenge = challenges[prop.challengeID];
-
     // winner gets back their full staked deposit, and dispensationPct*loser's stake
     uint reward = challenge.challengeWinnerReward();
 
