@@ -25,6 +25,7 @@
     "ethjs-rpc": "0.1.5",
     "ethjs-util": "0.1.4",
     "mocha": "^5.0.5",
+    "openzeppelin-solidity": "1.9.0",
     "original-require": "^1.0.1",
     "truffle": "3.4.11",
     "truffle-hdwallet-provider": "0.0.3"

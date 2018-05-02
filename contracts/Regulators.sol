@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 import "./historical/Token.sol";
-
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /*
    @title Regulators Controller
    @author Timothy Wang
@@ -78,7 +78,10 @@ contract Regulators {
     function withdraw(uint amount) external {
         require(!members[msg.sender].isRegulator);
         require(members[msg.sender].staked >= amount);
-        members[msg.sender].staked -= amount;
+        //members[msg.sender].staked -= amount;
+        //safe Math:
+        members[msg.sender].staked=SafeMath.sub(members[msg.sender].staked,amount);
+
         require(token.transfer(msg.sender, amount));
 
         emit Withdraw(msg.sender, amount);
