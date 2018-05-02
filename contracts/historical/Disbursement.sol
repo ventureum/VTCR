@@ -1,6 +1,7 @@
 pragma solidity 0.4.23;
 import "./Token.sol";
-import "../SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 // NOTE: ORIGINALLY THIS WAS "TOKENS/ABSTRACTTOKEN.SOL"... CHECK THAT
 
 

@@ -2,7 +2,8 @@ pragma solidity 0.4.23;
 import "./HumanStandardToken.sol";
 import "./Disbursement.sol";
 import "./Filter.sol";
-import "../SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 
 contract Sale {
 

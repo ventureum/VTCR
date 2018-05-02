@@ -5,7 +5,8 @@ import "./Parameterizer.sol";
 import "./Challenge.sol";
 import "./PLCRVoting.sol";
 import "./DLLBytes32.sol";
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 contract Registry {
 
     // ------

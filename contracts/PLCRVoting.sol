@@ -2,7 +2,8 @@ pragma solidity ^0.4.23;
 import "./historical/HumanStandardToken.sol";
 import "./DLL.sol";
 import "./AttributeStore.sol";
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 /**
 @title Partial-Lock-Commit-Reveal Voting scheme with ERC20 tokens 
 @author Team: Aspyn Palatnick, Cem Ozer, Yorke Rhodes

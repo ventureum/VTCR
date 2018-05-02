@@ -1,7 +1,7 @@
 pragma solidity ^0.4.23;
 
 import "./historical/Token.sol";
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /*
    @title Regulators Controller
    @author Timothy Wang

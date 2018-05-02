@@ -2,7 +2,8 @@ pragma solidity^0.4.23;
 
 import "./PLCRVoting.sol";
 import "./historical/StandardToken.sol";
-import "./SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 
 library Challenge {
 
