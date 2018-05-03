@@ -5,6 +5,7 @@ import "./Parameterizer.sol";
 import "./Challenge.sol";
 import "./PLCRVoting.sol";
 import "./DLLBytes32.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Registry {
 
@@ -27,6 +28,7 @@ contract Registry {
 
     using Challenge for Challenge.Data;
     using DLLBytes32 for DLLBytes32.Data;
+    using SafeMath for uint;
 
     struct Listing {
         uint applicationExpiry; // Expiration date of apply stage
@@ -101,7 +103,7 @@ contract Registry {
         listing.owner = msg.sender;
 
         // Sets apply stage end time
-        listing.applicationExpiry = block.timestamp + parameterizer.get("applyStageLen");
+        listing.applicationExpiry=block.timestamp.add(parameterizer.get("applyStageLen"));
         listing.unstakedDeposit = _amount;
         listing.projectName = _project;
 
@@ -172,13 +174,13 @@ contract Registry {
                                        parameterizer.get("commitStageLen"),
                                        parameterizer.get("revealStageLen")
                                        );
-
+        uint oneHundred=100;
         challenges[pollID] = Challenge.Data({
             challenger: msg.sender,
                     voting: voting,
                     token: token,
                     challengeID: pollID,
-                    rewardPool: ((100 - parameterizer.get("dispensationPct")) * _deposit) / 100,
+                    rewardPool: ((oneHundred.sub(parameterizer.get("dispensationPct"))).mul(_deposit)).div(oneHundred),
                     stake: _deposit,
                     resolved: false,
                     winningTokens: 0
@@ -188,7 +190,7 @@ contract Registry {
         listings[projectHash].challengeID = pollID;
 
         // Locks tokens for listing during challenge
-        listings[projectHash].unstakedDeposit -= _deposit;
+        listings[projectHash].unstakedDeposit=listings[projectHash].unstakedDeposit.sub(_deposit);
 
         // Takes tokens from challenger
         require(token.transferFrom(msg.sender, this, _deposit));
@@ -346,8 +348,7 @@ contract Registry {
         if (voting.isPassed(_challenge.challengeID)) {
             whitelistApplication(_project);
             // Unlock stake so that it can be retrieved by the applicant
-            listing.unstakedDeposit += winnerReward;
-
+            listing.unstakedDeposit = listing.unstakedDeposit.add(winnerReward);
             emit _ChallengeFailed(_challenge.challengeID);
             if (!wasWhitelisted) { emit _NewProjectWhitelisted(_project); }
         }

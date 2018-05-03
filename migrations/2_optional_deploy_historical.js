@@ -1,4 +1,5 @@
 const Sale = artifacts.require('historical/Sale.sol');
+const SafeMath= artifacts.require('../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol')
 const fs = require('fs');
 const BN = require('bn.js');
 
