@@ -39,9 +39,6 @@ module.exports = (deployer, network, accounts) => {
       vestingDates.push(foundersConf.vestingDates[date]);
     }
 
-    deployer.deploy(SafeMath);
-    deployer.link(SafeMath, Sale);
-
     deployer.deploy(Sale,
       saleConf.owner,
       saleConf.wallet,

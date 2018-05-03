@@ -9,7 +9,7 @@ const DLLBytes32 = artifacts.require('DLLBytes32.sol');
 const Challenge = artifacts.require('Challenge.sol');
 const AttributeStore = artifacts.require('AttributeStore.sol');
 const PLCRVoting = artifacts.require('PLCRVoting.sol');
-const SafeMath= artifacts.require('../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol')
+const SafeMath = artifacts.require('../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol')
 
 const fs = require('fs');
 
@@ -65,8 +65,6 @@ module.exports = (deployer, network, accounts) => {
   deployer.deploy(AttributeStore);
   deployer.deploy(Challenge);
 
-  deployer.link(SafeMath, Challenge);
-
   deployer.link(SafeMath, PLCRVoting);
   deployer.link(DLL, PLCRVoting);
   deployer.link(AttributeStore, PLCRVoting);
@@ -75,7 +73,6 @@ module.exports = (deployer, network, accounts) => {
   deployer.link(DLL, Parameterizer);
   deployer.link(AttributeStore, Parameterizer);
   deployer.link(Challenge, Parameterizer);
-
 
   deployer.link(SafeMath, Registry);
   deployer.link(DLL, Registry);

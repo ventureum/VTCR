@@ -47,8 +47,6 @@ contract PLCRVoting {
     uint constant INITIAL_POLL_NONCE = 0;
     HumanStandardToken public token;
 
-
-
     /**
     @dev Initializes voteQuorum, commitDuration, revealDuration, and pollNonce in addition to token contract and trusted mapping
     @param _tokenAddr The address whe(setq debug-on-error t)re the ERC20 token contract is deployed
@@ -165,14 +163,12 @@ contract PLCRVoting {
         uint numTokens = getNumTokens(msg.sender, _pollID); 
 
         if (_voteOption == 1) {// apply numTokens to appropriate poll choice
-            pollMap[_pollID].votesFor=pollMap[_pollID].votesFor.add(numTokens);
+            pollMap[_pollID].votesFor = pollMap[_pollID].votesFor.add(numTokens);
         }
         else{
-            pollMap[_pollID].votesAgainst=pollMap[_pollID].votesAgainst.add(numTokens);
+            pollMap[_pollID].votesAgainst = pollMap[_pollID].votesAgainst.add(numTokens);
         }
         dllMap[msg.sender].remove(_pollID); // remove the node referring to this vote upon reveal
-
-
         emit VoteRevealed(msg.sender, _pollID, numTokens, _voteOption);
     }
 
