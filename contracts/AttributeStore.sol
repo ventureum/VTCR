@@ -1,5 +1,6 @@
 pragma solidity^0.4.23;
 
+
 library AttributeStore {
     struct Data {
         mapping(bytes32 => uint) store;

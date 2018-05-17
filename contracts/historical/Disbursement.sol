@@ -1,11 +1,14 @@
 pragma solidity 0.4.23;
 import "./Token.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 // NOTE: ORIGINALLY THIS WAS "TOKENS/ABSTRACTTOKEN.SOL"... CHECK THAT
 
 
 /// @title Disbursement contract - allows to distribute tokens over time
 /// @author Stefan George - <stefan@gnosis.pm>
 contract Disbursement {
+
+    using SafeMath for uint;
 
     /*
      *  Storage
@@ -85,7 +88,7 @@ contract Disbursement {
         uint maxTokens = calcMaxWithdraw();
         if (_value > maxTokens)
             revert();
-        withdrawnTokens += _value;
+        withdrawnTokens = withdrawnTokens.add(_value);
         token.transfer(_to, _value);
     }
 
@@ -93,12 +96,13 @@ contract Disbursement {
     /// @return Number of vested tokens to withdraw
     function calcMaxWithdraw()
         public
-        constant
+        view
         returns (uint)
     {
-        uint maxTokens = (token.balanceOf(this) + withdrawnTokens) * (now - startDate) / disbursementPeriod;
+
+        uint maxTokens = (token.balanceOf(this).add(withdrawnTokens).mul(now.sub(startDate))).div(disbursementPeriod);
         if (withdrawnTokens >= maxTokens || startDate > now)
             return 0;
-        return maxTokens - withdrawnTokens;
+        return maxTokens.sub(withdrawnTokens);
     }
 }

@@ -2,7 +2,7 @@ pragma solidity ^0.4.23;
 import "./historical/HumanStandardToken.sol";
 import "./DLL.sol";
 import "./AttributeStore.sol";
-
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /**
 @title Partial-Lock-Commit-Reveal Voting scheme with ERC20 tokens 
 @author Team: Aspyn Palatnick, Cem Ozer, Yorke Rhodes
@@ -37,6 +37,8 @@ contract PLCRVoting {
     using AttributeStore for AttributeStore.Data;
     AttributeStore.Data store;
 
+    using SafeMath for uint;
+
     // ============
     // CONSTRUCTOR:
     // ============
@@ -64,7 +66,7 @@ contract PLCRVoting {
     */
     function requestVotingRights(uint _numTokens) external {
         require(token.balanceOf(msg.sender) >= _numTokens);
-        voteTokenBalance[msg.sender] += _numTokens;
+        voteTokenBalance[msg.sender] = voteTokenBalance[msg.sender].add(_numTokens);
         require(token.transferFrom(msg.sender, this, _numTokens));
         emit VotingRightsGranted(msg.sender, _numTokens);
     }
@@ -74,9 +76,9 @@ contract PLCRVoting {
     @param _numTokens The number of ERC20 tokens desired in exchange for voting rights
     */
     function withdrawVotingRights(uint _numTokens) external {
-        uint availableTokens = voteTokenBalance[msg.sender] - getLockedTokens(msg.sender);
+        uint availableTokens = voteTokenBalance[msg.sender].sub(getLockedTokens(msg.sender));
         require(availableTokens >= _numTokens);
-        voteTokenBalance[msg.sender] -= _numTokens;
+        voteTokenBalance[msg.sender] = voteTokenBalance[msg.sender].sub(_numTokens);
         require(token.transfer(msg.sender, _numTokens));
         emit VotingRightsWithdrawn(msg.sender, _numTokens);
     }
@@ -136,7 +138,7 @@ contract PLCRVoting {
     @param _numTokens The number of tokens to be committed towards the poll (used for sorting)
     @return valid Boolean indication of if the specified position maintains the sort
     */
-    function validPosition(uint _prevID, uint _nextID, address _voter, uint _numTokens) public constant returns (bool valid) {
+    function validPosition(uint _prevID, uint _nextID, address _voter, uint _numTokens) public view returns (bool valid) {
         bool prevValid = (_numTokens >= getNumTokens(_voter, _prevID));
         // if next is zero node, _numTokens does not need to be greater
         bool nextValid = (_numTokens <= getNumTokens(_voter, _nextID) || _nextID == 0); 
@@ -152,15 +154,17 @@ contract PLCRVoting {
     function revealVote(uint _pollID, uint _voteOption, uint _salt) external {
         // Make sure the reveal period is active
         require(revealStageActive(_pollID));
-        require(!hasBeenRevealed(msg.sender, _pollID));                        // prevent user from revealing multiple times
-        require(keccak256(_voteOption, _salt) == getCommitHash(msg.sender, _pollID)); // compare resultant hash from inputs to original commitHash
+        // prevent user from revealing multiple times
+        require(!hasBeenRevealed(msg.sender, _pollID));
+        // compare resultant hash from inputs to original commitHash
+        require(keccak256(_voteOption, _salt) == getCommitHash(msg.sender, _pollID)); 
 
         uint numTokens = getNumTokens(msg.sender, _pollID); 
 
         if (_voteOption == 1) // apply numTokens to appropriate poll choice
-            pollMap[_pollID].votesFor += numTokens;
+            pollMap[_pollID].votesFor = pollMap[_pollID].votesFor.add(numTokens);
         else
-            pollMap[_pollID].votesAgainst += numTokens;
+            pollMap[_pollID].votesAgainst = pollMap[_pollID].votesAgainst.add(numTokens);
         
         dllMap[msg.sender].remove(_pollID); // remove the node referring to this vote upon reveal
 
@@ -172,7 +176,7 @@ contract PLCRVoting {
     @param _salt Arbitrarily chosen integer used to generate secretHash
     @return correctVotes Number of tokens voted for winning option
     */
-    function getNumPassingTokens(address _voter, uint _pollID, uint _salt) public constant returns (uint correctVotes) {
+    function getNumPassingTokens(address _voter, uint _pollID, uint _salt) public view returns (uint correctVotes) {
         require(pollEnded(_pollID));
         require(hasBeenRevealed(_voter, _pollID));
 
@@ -194,12 +198,12 @@ contract PLCRVoting {
     @param _revealDuration Length of desired reveal period in seconds
     */
     function startPoll(uint _voteQuorum, uint _commitDuration, uint _revealDuration) public returns (uint pollID) {
-        pollNonce = pollNonce + 1;
+        pollNonce = pollNonce.add(1);
 
         pollMap[pollNonce] = Poll({
             voteQuorum: _voteQuorum,
-            commitEndDate: block.timestamp + _commitDuration,
-            revealEndDate: block.timestamp + _commitDuration + _revealDuration,
+            commitEndDate: block.timestamp.add(_commitDuration),
+            revealEndDate: block.timestamp.add(_commitDuration).add(_revealDuration),
             votesFor: 0,
             votesAgainst: 0
         });
@@ -217,7 +221,7 @@ contract PLCRVoting {
         require(pollEnded(_pollID));
 
         Poll memory poll = pollMap[_pollID];
-        return (100 * poll.votesFor) >= (poll.voteQuorum * (poll.votesFor + poll.votesAgainst));
+        return poll.votesFor.mul(100) >= poll.voteQuorum.mul(poll.votesFor.add(poll.votesAgainst));
     }
 
     // ----------------
@@ -299,7 +303,9 @@ contract PLCRVoting {
         assert(!(commitEndDate == 0 && revealEndDate != 0));
         assert(!(commitEndDate != 0 && revealEndDate == 0));
 
-        if(commitEndDate == 0 || revealEndDate == 0) { return false; }
+        if(commitEndDate == 0 || revealEndDate == 0) {
+            return false;
+        }
         return true;
     }
 
@@ -353,18 +359,18 @@ contract PLCRVoting {
     */
     function getInsertPointForNumTokens(address _voter, uint _numTokens)
     public view returns (uint prevNode) {
-      uint nodeID = getLastNode(_voter);
-      uint tokensInNode = getNumTokens(_voter, nodeID);
+        uint nodeID = getLastNode(_voter);
+        uint tokensInNode = getNumTokens(_voter, nodeID);
 
-      while(tokensInNode != 0) {
-        tokensInNode = getNumTokens(_voter, nodeID);
-        if(tokensInNode < _numTokens) {
-          return nodeID;
+        while(tokensInNode != 0) {
+            tokensInNode = getNumTokens(_voter, nodeID);
+            if(tokensInNode < _numTokens) {
+                return nodeID;
+            }
+            nodeID = dllMap[_voter].getPrev(nodeID);
         }
-        nodeID = dllMap[_voter].getPrev(nodeID);
-      }
 
-      return nodeID;
+        return nodeID;
     }
  
     // ----------------

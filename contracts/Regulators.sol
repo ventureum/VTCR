@@ -1,6 +1,7 @@
 pragma solidity ^0.4.23;
 
 import "./historical/Token.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /*
    @title Regulators Controller
@@ -14,6 +15,8 @@ contract Regulators {
     event RequestApproval(address addr, uint amount);
     event Withdraw(address addr, uint amount);
     event SetOwnership(address addr, bool val);
+
+    using SafeMath for uint;
 
     // Anyone can be a member
     struct Member {
@@ -78,7 +81,8 @@ contract Regulators {
     function withdraw(uint amount) external {
         require(!members[msg.sender].isRegulator);
         require(members[msg.sender].staked >= amount);
-        members[msg.sender].staked -= amount;
+
+        members[msg.sender].staked = SafeMath.sub(members[msg.sender].staked,amount);
         require(token.transfer(msg.sender, amount));
 
         emit Withdraw(msg.sender, amount);

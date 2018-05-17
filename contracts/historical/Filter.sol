@@ -29,8 +29,7 @@ contract Filter {
                 claimAmount: _beneficiaryTokens[i],
                 claimed: false
             });
-            emit SetupAllowance(_beneficiaries[i],
-                           beneficiaries[_beneficiaries[i]].claimAmount);
+            emit SetupAllowance(_beneficiaries[i],beneficiaries[_beneficiaries[i]].claimAmount);
         }
     }
 
