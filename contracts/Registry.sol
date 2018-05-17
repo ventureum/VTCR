@@ -5,6 +5,7 @@ import "./Parameterizer.sol";
 import "./Challenge.sol";
 import "./PLCRVoting.sol";
 import "./DLLBytes32.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Registry {
 
@@ -27,6 +28,7 @@ contract Registry {
 
     using Challenge for Challenge.Data;
     using DLLBytes32 for DLLBytes32.Data;
+    using SafeMath for uint;
 
     struct Listing {
         uint applicationExpiry; // Expiration date of apply stage
@@ -101,7 +103,7 @@ contract Registry {
         listing.owner = msg.sender;
 
         // Sets apply stage end time
-        listing.applicationExpiry = block.timestamp + parameterizer.get("applyStageLen");
+        listing.applicationExpiry = block.timestamp.add(parameterizer.get("applyStageLen"));
         listing.unstakedDeposit = _amount;
         listing.projectName = _project;
 
@@ -129,8 +131,7 @@ contract Registry {
         require(!isWhitelisted(_project));
         
         // Cannot exit during ongoing challenge
-        require(!challenges[listing.challengeID].isInitialized() ||
-                challenges[listing.challengeID].isResolved());
+        require(!challenges[listing.challengeID].isInitialized() || challenges[listing.challengeID].isResolved());
 
         // Remove project & return tokens
         resetListing(_project);
@@ -157,8 +158,7 @@ contract Registry {
         // Project must be in apply stage or already on the whitelist
         require(appWasMade(_project) || listing.whitelisted);
         // Prevent multiple challenges
-        require(!challenges[listing.challengeID].isInitialized() ||
-                challenges[listing.challengeID].isResolved());
+        require(!challenges[listing.challengeID].isInitialized() || challenges[listing.challengeID].isResolved());
 
         if (listing.unstakedDeposit < _deposit) {
             // Not enough tokens, project auto-delisted
@@ -168,27 +168,27 @@ contract Registry {
 
         // Starts poll
         uint pollID = voting.startPoll(
-                                       parameterizer.get("voteQuorum"),
-                                       parameterizer.get("commitStageLen"),
-                                       parameterizer.get("revealStageLen")
-                                       );
-
+            parameterizer.get("voteQuorum"),
+            parameterizer.get("commitStageLen"),
+            parameterizer.get("revealStageLen")
+        );
+        uint oneHundred = 100;
         challenges[pollID] = Challenge.Data({
             challenger: msg.sender,
-                    voting: voting,
-                    token: token,
-                    challengeID: pollID,
-                    rewardPool: ((100 - parameterizer.get("dispensationPct")) * _deposit) / 100,
-                    stake: _deposit,
-                    resolved: false,
-                    winningTokens: 0
-                    });
+            voting: voting,
+            token: token,
+            challengeID: pollID,
+            rewardPool : oneHundred.sub(parameterizer.get("dispensationPct")).mul(_deposit).div(oneHundred),
+            stake: _deposit,
+            resolved: false,
+            winningTokens: 0
+            });
 
         // Updates listing to store most recent challenge
         listings[projectHash].challengeID = pollID;
 
         // Locks tokens for listing during challenge
-        listings[projectHash].unstakedDeposit -= _deposit;
+        listings[projectHash].unstakedDeposit = listings[projectHash].unstakedDeposit.sub(_deposit);
 
         // Takes tokens from challenger
         require(token.transferFrom(msg.sender, this, _deposit));
@@ -240,11 +240,13 @@ contract Registry {
         // the project can be whitelisted,
         // and either: the challengeID == 0, or the challenge has been resolved.
         if (
-            appWasMade(_project) &&
-            isExpired(listings[projectHash].applicationExpiry) &&
-            !isWhitelisted(_project) &&
+            appWasMade(_project) && 
+            isExpired(listings[projectHash].applicationExpiry) && 
+            !isWhitelisted(_project) && 
             (!challenges[challengeID].isInitialized() || challenges[challengeID].isResolved())
-            ) { return true; }
+            ) {
+            return true;
+        }
 
         return false;
     }
@@ -296,7 +298,7 @@ contract Registry {
        @return             The uint indicating the voter's reward (in nano-ADT)
     */
     function voterReward(address _voter, uint _challengeID, uint _salt)
-        public constant returns (uint) {
+        public view returns (uint) {
         return challenges[_challengeID].voterReward(_voter, _salt);
     }
 
@@ -309,7 +311,7 @@ contract Registry {
        challenge
     */
     function tokenClaims(uint _challengeID, address _voter)
-        public constant returns (bool) {
+        public view returns (bool) {
         return challenges[_challengeID].tokenClaims[_voter];
     }
 
@@ -338,18 +340,18 @@ contract Registry {
         // Records whether the project is a listing or an application
         bool wasWhitelisted = isWhitelisted(_project);
 
-        _challenge.winningTokens =
-          _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
+        _challenge.winningTokens = _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
         _challenge.resolved = true;
 
         // Case: challenge failed
         if (voting.isPassed(_challenge.challengeID)) {
             whitelistApplication(_project);
             // Unlock stake so that it can be retrieved by the applicant
-            listing.unstakedDeposit += winnerReward;
-
+            listing.unstakedDeposit = listing.unstakedDeposit.add(winnerReward);
             emit _ChallengeFailed(_challenge.challengeID);
-            if (!wasWhitelisted) { emit _NewProjectWhitelisted(_project); }
+            if (!wasWhitelisted) {
+                emit _NewProjectWhitelisted(_project);
+            }
         }
         // Case: challenge succeeded
         else {
@@ -358,8 +360,12 @@ contract Registry {
             require(token.transfer(_challenge.challenger, winnerReward));
 
             emit _ChallengeSucceeded(_challenge.challengeID);
-            if (wasWhitelisted) { emit _ListingRemoved(_project); }
-            else {emit _ApplicationRemoved(_project); }
+            if (wasWhitelisted) {
+                emit _ListingRemoved(_project);
+            }
+            else {
+                emit _ApplicationRemoved(_project);
+            }
         }
     }
 
