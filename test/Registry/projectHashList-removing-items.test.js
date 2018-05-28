@@ -1,5 +1,3 @@
-const expectThrow = require('../../utils/expectThrow.js');
-
 const Eth = require('ethjs');
 
 var Registry = artifacts.require("Registry");

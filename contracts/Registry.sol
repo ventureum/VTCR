@@ -6,8 +6,9 @@ import "./Challenge.sol";
 import "./PLCRVoting.sol";
 import "./DLLBytes32.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract Registry {
+contract Registry is Ownable {
 
     // ------
     // EVENTS
@@ -21,7 +22,7 @@ contract Registry {
     event _ChallengeFailed(uint challengeID);
     event _ChallengeSucceeded(uint challengeID);
     event _RewardClaimed(address indexed voter, uint challengeID, uint reward);
-
+    event _WithdrawByVentureumTeam(address indexed onwer, uint amount);
     // ------
     // DATA STRUCTURES
     // ------
@@ -60,6 +61,8 @@ contract Registry {
     // Store project owner's address
     mapping(address => bool) public isProjectFounder;
 
+    // Store the amount of fund can be withdrawn by Ventureum team 
+    uint private availableFundForVentureum;
     // ------------
     // CONSTRUCTOR
     // ------------
@@ -72,10 +75,12 @@ contract Registry {
        @param _paramsAddr      Address of a Parameterizer contract for the provided PLCR voting contract
     */
     constructor(
-                      address _tokenAddr,
-                      address _plcrAddr,
-                      address _paramsAddr
-                      ) public {
+        address _tokenAddr,
+        address _plcrAddr,
+        address _paramsAddr
+    )
+    public 
+    {
         token = StandardToken(_tokenAddr);
         voting = PLCRVoting(_plcrAddr);
         parameterizer = Parameterizer(_paramsAddr);
@@ -88,13 +93,19 @@ contract Registry {
     /**
        @notice             Allows a user to start an application.
        @notice             Takes tokens from user and sets apply stage end time.
-       @param _project      The project of a potential listing a user is applying to add to the registry
+       @param _project     The project of a potential listing a user is applying to add to the registry
        @param _amount      The number of ERC20 tokens a user is willing to potentially stake
     */
     function apply(string _project, uint _amount) external {
         require(!isWhitelisted(_project));
         require(!appWasMade(_project));
         require(_amount >= parameterizer.get("minDeposit"));
+
+        // Transfers tokens from user to Registry contract
+        require(token.transferFrom(msg.sender, this, _amount));
+
+        // 50% of deposit becomes available to Ventureum team
+        availableFundForVentureum = availableFundForVentureum.add(_amount.div(2));
 
         bytes32 projectHash = keccak256(_project);
 
@@ -104,7 +115,8 @@ contract Registry {
 
         // Sets apply stage end time
         listing.applicationExpiry = block.timestamp.add(parameterizer.get("applyStageLen"));
-        listing.unstakedDeposit = _amount;
+        // 50% of the deposit becomes stake deposit. 
+        listing.unstakedDeposit = _amount.sub(_amount.div(2));
         listing.projectName = _project;
 
         // insert to front
@@ -112,9 +124,6 @@ contract Registry {
 
         // Add address to project owner list
         isProjectFounder[msg.sender] = true;
-
-        // Transfers tokens from user to Registry contract
-        require(token.transferFrom(listing.owner, this, _amount));
 
         emit _Application(msg.sender, _project, _amount);
     }
@@ -132,6 +141,9 @@ contract Registry {
         
         // Cannot exit during ongoing challenge
         require(!challenges[listing.challengeID].isInitialized() || challenges[listing.challengeID].isResolved());
+
+        // refund staked deposit.
+        require(token.transfer(listing.owner, listing.unstakedDeposit));
 
         // Remove project & return tokens
         resetListing(_project);
@@ -153,18 +165,16 @@ contract Registry {
 
         require(now < listing.applicationExpiry, "Cannot challenge after application stage");
 
-        uint _deposit = parameterizer.get("minDeposit");
+        // Challenger needs to stake equivalent amount of fund;
+        uint _deposit = listing.unstakedDeposit;
+
+        // Takes tokens from challenger
+        require(token.transferFrom(msg.sender, this, _deposit));
 
         // Project must be in apply stage or already on the whitelist
         require(appWasMade(_project) || listing.whitelisted);
         // Prevent multiple challenges
         require(!challenges[listing.challengeID].isInitialized() || challenges[listing.challengeID].isResolved());
-
-        if (listing.unstakedDeposit < _deposit) {
-            // Not enough tokens, project auto-delisted
-            resetListing(_project);
-            return 0;
-        }
 
         // Starts poll
         uint pollID = voting.startPoll(
@@ -188,10 +198,7 @@ contract Registry {
         listings[projectHash].challengeID = pollID;
 
         // Locks tokens for listing during challenge
-        listings[projectHash].unstakedDeposit = listings[projectHash].unstakedDeposit.sub(_deposit);
-
-        // Takes tokens from challenger
-        require(token.transferFrom(msg.sender, this, _deposit));
+        // listings[projectHash].unstakedDeposit = listings[projectHash].unstakedDeposit.sub(_deposit);
 
         emit _Challenge(msg.sender, _project, _deposit, pollID);
         return pollID;
@@ -337,21 +344,17 @@ contract Registry {
         // which is: (winner's full stake) + (dispensationPct * loser's stake)
         uint winnerReward = _challenge.challengeWinnerReward();
 
-        // Records whether the project is a listing or an application
-        bool wasWhitelisted = isWhitelisted(_project);
-
         _challenge.winningTokens = _challenge.voting.getTotalNumberOfTokensForWinningOption(_challenge.challengeID);
         _challenge.resolved = true;
 
         // Case: challenge failed
         if (voting.isPassed(_challenge.challengeID)) {
             whitelistApplication(_project);
-            // Unlock stake so that it can be retrieved by the applicant
-            listing.unstakedDeposit = listing.unstakedDeposit.add(winnerReward);
+            // Transfer the reward to applicant
+            require(token.transfer(listing.owner, winnerReward));
+            
             emit _ChallengeFailed(_challenge.challengeID);
-            if (!wasWhitelisted) {
-                emit _NewProjectWhitelisted(_project);
-            }
+            emit _NewProjectWhitelisted(_project);
         }
         // Case: challenge succeeded
         else {
@@ -360,12 +363,8 @@ contract Registry {
             require(token.transfer(_challenge.challenger, winnerReward));
 
             emit _ChallengeSucceeded(_challenge.challengeID);
-            if (wasWhitelisted) {
-                emit _ListingRemoved(_project);
-            }
-            else {
-                emit _ApplicationRemoved(_project);
-            }
+            emit _ApplicationRemoved(_project);
+            
         }
     }
 
@@ -377,8 +376,10 @@ contract Registry {
     */
     function whitelistApplication(string _project) private {
         bytes32 projectHash = keccak256(_project);
-
         listings[projectHash].whitelisted = true;
+        
+        // transfer unstakedDeposit to listing owner after being whitelisted
+        require(token.transfer(listings[projectHash].owner, listings[projectHash].unstakedDeposit));
     }
 
     /**
@@ -395,5 +396,19 @@ contract Registry {
 
         // Remove address from project owner address list
         isProjectFounder[msg.sender] = false;
+    }
+
+    /**
+        Withdraw tokens from registry.
+        it can only be called by owner (creator of the contract)
+    */
+    function withdraw () public onlyOwner {
+        uint _amount = availableFundForVentureum;
+        // reset available fund
+        availableFundForVentureum = 0;
+
+        require(token.transfer(owner, _amount));
+        
+        emit _WithdrawByVentureumTeam(msg.sender, _amount);
     }
 }
