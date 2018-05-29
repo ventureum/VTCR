@@ -47,7 +47,7 @@ library Challenge {
 
     /// @dev determines the number of tokens awarded to the winning party in a challenge.
     function challengeWinnerReward(Data storage _self) public view returns (uint) {
-      // Edge case, nobody voted, give all tokens to the challenger.
+      // Edge case, nobody voted, give all tokens to the winner.
         if (_self.voting.getTotalNumberOfTokensForWinningOption(_self.challengeID) == 0) {
             return _self.stake.mul(2);
         }
